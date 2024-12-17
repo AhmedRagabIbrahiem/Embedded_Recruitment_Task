@@ -1,4 +1,6 @@
 use crate::message::EchoMessage;
+use crate::message::{ClientMessage, client_message};
+use crate::message::{ServerMessage, server_message, AddResponse};
 use log::{error, info, warn};
 use prost::Message;
 use std::{
@@ -22,22 +24,64 @@ impl Client {
     }
 
     pub fn handle(&mut self) -> io::Result<()> {
-        let mut buffer = [0; 512];
+        let mut buffer = vec![0u8; 1024];
         // Read data from the client
         let bytes_read = self.stream.read(&mut buffer)?;
+        println!("The buffer is: {:?}", &buffer[..bytes_read]);
         if bytes_read == 0 {
-            info!("Client disconnected.");
+            println!("Client disconnected.");
             return Ok(());
         }
+        let decoded_message = match ClientMessage::decode(&buffer[..bytes_read]) {
+            Ok(msg) => msg, // Successfully decoded
+            Err(e) => {
+                eprintln!("Failed to decode ClientMessage: {}", e);
+                return Ok(()); // Handle or exit on decoding failure
+            }
+        };
+        
+        match decoded_message.message {
+            Some(client_message::Message::EchoMessage(echo)) => {
+                println!("Received EchoMessage with content: {}", echo.content);
+                // Echo back the same message in a ServerMessage
+            let server_message = ServerMessage {
+                message: Some(server_message::Message::EchoMessage(echo)),
+            };
 
-        if let Ok(message) = EchoMessage::decode(&buffer[..bytes_read]) {
-            info!("Received: {}", message.content);
-            // Echo back the message
-            let payload = message.encode_to_vec();
-            self.stream.write_all(&payload)?;
+            let mut buffer = Vec::new();
+            server_message.encode(&mut buffer).expect("Failed to encode ServerMessage");
+
+            self.stream.write_all(&buffer)?;
             self.stream.flush()?;
-        } else {
-            error!("Failed to decode message");
+            println!("Echoed back the message");
+            }
+            Some(client_message::Message::AddRequest(add_request)) => {
+                println!(
+                    "Received AddRequest with values a: {}, b: {}",
+                    add_request.a, add_request.b
+                );
+                // Create the AddResponse
+            let add_response = AddResponse {
+                result: add_request.a + add_request.b,
+            };
+
+            // Wrap the response in a ServerMessage
+            let server_message = ServerMessage {
+                message: Some(server_message::Message::AddResponse(add_response)),
+            };
+
+            // Encode the ServerMessage
+            let mut buffer = Vec::new();
+            server_message.encode(&mut buffer).expect("Failed to encode ServerMessage");
+
+            // Send the buffer back to the client
+            self.stream.write_all(&buffer)?;
+            self.stream.flush()?;
+            println!("Sent AddResponse with result: {}", add_response.result);
+            }
+            None => {
+                println!("No message received in ClientMessage.");
+            }
         }
 
         Ok(())
@@ -63,7 +107,7 @@ impl Server {
     /// Runs the server, listening for incoming connections and handling them
     pub fn run(&self) -> io::Result<()> {
         self.is_running.store(true, Ordering::SeqCst); // Set the server as running
-        info!("Server is running on {}", self.listener.local_addr()?);
+        println!("Server is running on {}", self.listener.local_addr()?);
 
         // Set the listener to non-blocking mode
         self.listener.set_nonblocking(true)?;

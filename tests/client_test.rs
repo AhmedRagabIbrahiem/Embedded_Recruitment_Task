@@ -18,8 +18,9 @@ fn setup_server_thread(server: Arc<Server>) -> JoinHandle<()> {
 fn create_server() -> Arc<Server> {
     Arc::new(Server::new("localhost:8080").expect("Failed to start server"))
 }
-
+use serial_test::serial;
 #[test]
+#[serial]
 fn test_client_connection() {
     // Set up the server in a separate thread
     let server = create_server();
@@ -44,6 +45,7 @@ fn test_client_connection() {
 }
 
 #[test]
+#[serial]
 fn test_client_echo_message() {
     // Set up the server in a separate thread
     let server = create_server();
@@ -93,6 +95,7 @@ fn test_client_echo_message() {
 }
 
 #[test]
+#[serial]
 #[ignore = "please remove ignore and fix this test"]
 fn test_multiple_echo_messages() {
     // Set up the server in a separate thread
@@ -225,7 +228,7 @@ fn test_multiple_clients() {
 }
 
 #[test]
-#[ignore = "please remove ignore and fix this test"]
+#[serial]
 fn test_client_add_request() {
     // Set up the server in a separate thread
     let server = create_server();

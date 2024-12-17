@@ -83,19 +83,21 @@ impl Client {
     }
 
     pub fn receive(&mut self) -> io::Result<ServerMessage> {
+        println!("In the receive.....!");
         if let Some(ref mut stream) = self.stream {
-            info!("Receiving message from the server");
+            println!("Receiving message from the server");
             let mut buffer = vec![0u8; 1024];
             let bytes_read = stream.read(&mut buffer)?;
+            println!("Received {} bytes from the server1", bytes_read);
             if bytes_read == 0 {
-                info!("Server disconnected.");
+                println!("Server disconnected.");
                 return Err(io::Error::new(
                     io::ErrorKind::ConnectionAborted,
                     "Server disconnected",
                 ));
             }
 
-            info!("Received {} bytes from the server", bytes_read);
+            println!("Received {} bytes from the server", bytes_read);
 
             // Decode the received message
             ServerMessage::decode(&buffer[..bytes_read]).map_err(|e| {
