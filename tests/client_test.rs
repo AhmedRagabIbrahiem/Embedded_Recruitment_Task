@@ -22,7 +22,7 @@ fn create_server() -> Arc<Server> {
 use serial_test::serial;
 #[test]
 #[serial]
-#[ignore = "please remove ignore and fix this test"]
+
 fn test_client_connection() {
     // Set up the server in a separate thread
     let server = create_server();
@@ -48,7 +48,7 @@ fn test_client_connection() {
 
 #[test]
 #[serial]
-#[ignore = "please remove ignore and fix this test"]
+
 fn test_client_echo_message() {
     // Set up the server in a separate thread
     let server = create_server();
@@ -99,7 +99,7 @@ fn test_client_echo_message() {
 
 #[test]
 #[serial]
-#[ignore = "please remove ignore and fix this test"]
+
 fn test_multiple_echo_messages() {
     // Set up the server in a separate thread
     let server = create_server();
@@ -158,7 +158,7 @@ fn test_multiple_echo_messages() {
 }
 
 #[test]
-
+#[serial]
 fn test_multiple_clients() {
     // Set up the server in a separate thread
     let server = create_server();
@@ -234,7 +234,7 @@ fn test_multiple_clients() {
 
 #[test]
 #[serial]
-#[ignore = "please remove ignore and fix this test"]
+
 fn test_client_add_request() {
     // Set up the server in a separate thread
     let server = create_server();

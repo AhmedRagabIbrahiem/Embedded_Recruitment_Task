@@ -5,7 +5,7 @@ use log::{error, info, warn};
 use prost::Message;
 use std::{
     io::{self, ErrorKind, Read, Write},
-    net::{TcpListener, TcpStream},
+    net::{TcpListener, TcpStream, ToSocketAddrs,SocketAddr},
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -15,6 +15,26 @@ use std::{
     time::Duration,
     mem::drop
 };
+
+fn server_shutdown() -> std::io::Result<()> {
+    let address = format!("{}:{}", "localhost", 8080);
+    let socket_addrs = address.to_socket_addrs()?; // Resolve the address
+
+    // Try to connect
+    if let Some(socket_addr) = socket_addrs.into_iter().next() {
+        // Connect to the server with a timeout to wakeup it for the shutdown.
+        let stream = TcpStream::connect_timeout(&socket_addr, Duration::from_millis(1000))?;
+        println!("Connected to the server at: {:?}", socket_addr);
+    }
+    else {
+        eprintln!("No valid socket addresses found for {}", address);
+    }
+
+    Err(std::io::Error::new(
+        std::io::ErrorKind::AddrNotAvailable,
+        "Unable to connect to any address",
+    ))
+}
 
 /// Client struct for handling individual connections
 struct Client {
@@ -139,12 +159,12 @@ impl Server {
     println!("Stopping server... Waiting for threads to finish.");
 
     // After stopping the server, join all thread handles
-    let mut handles = self.thread_handles.lock().unwrap();
-    while let Some(thread_handle) = handles.pop() {
-        if let Err(e) = thread_handle.join() {
-            eprintln!("Error joining thread: {:?}", e);
-        }
-    }
+    // let mut handles = self.thread_handles.lock().unwrap();
+    // while let Some(thread_handle) = handles.pop() {
+    //     if let Err(e) = thread_handle.join() {
+    //         eprintln!("Error joining thread: {:?}", e);
+    //     }
+    // }
             
         println!("Server stopped.");
         Ok(())
@@ -158,6 +178,9 @@ impl Server {
         } else {
             println!("Server was already stopped or not running.");
         }
+        
+        // Resolve the address
+        server_shutdown();
     }
         
 }
